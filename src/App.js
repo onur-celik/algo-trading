@@ -1,3 +1,4 @@
+import { ChartComponent } from "./components/ChartComponent";
 const initialData = [];
 
 function App() {
