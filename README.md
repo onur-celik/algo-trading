@@ -8,6 +8,6 @@ Live chart updates each seconds.
 wss://stream.binance.com:9443/stream
 
 ## USAGE : 
-1. clone \
-2. `npm install`\
+1. clone
+2. `npm install`
 3. `npm run start`
