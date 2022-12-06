@@ -6,3 +6,8 @@ Live chart updates each seconds.
 
 ### `DATA SOURCE :` Binance Web Socket
 wss://stream.binance.com:9443/stream
+
+## USAGE : 
+1. clone \
+2. `npm install`\
+3. `npm run start`
