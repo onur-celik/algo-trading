@@ -20,8 +20,10 @@ export const ChartComponent = ({
     const [selectedCoin, setSelectedCoin] = useState("btcusdt");
     const [liveData, setLiveData] = useState(data);
     const chartContainerRef = useRef();
-    const [chartSeries, setChartSeries] = useState(null);
     const [firstDataSet, setFirstDataSet] = useState(null);
+    const [markerList, setMarkerList] = useState([]);
+    const [averageVol, setAverageVol] = useState(null);
+    const [totalVol, setTotalVol] = useState(0);
 
     const selectCoin = (coin) => {
         setSelectedCoin(coin.target.value);
@@ -41,7 +43,7 @@ export const ChartComponent = ({
 
     useEffect(() => {
         const shiftingPoint = 180;
-        lastJsonMessage?.data &&
+        if (lastJsonMessage?.data?.k) {
             setLiveData((liveData) => {
                 let oldData = [];
                 if (liveData.length > shiftingPoint) {
@@ -54,21 +56,81 @@ export const ChartComponent = ({
                     ...oldData,
                     {
                         time: parseInt(
-                            new Date(lastJsonMessage?.data?.E)
+                            new Date(lastJsonMessage?.data?.k?.t)
                                 .getTime()
                                 .toString()
                                 .substring(0, 10)
                         ),
-                        value: lastJsonMessage?.data?.c,
+                        value: parseFloat(lastJsonMessage?.data?.k?.c),
                     },
                 ];
             });
+            if (
+                !isNaN(
+                    parseInt(
+                        new Date(lastJsonMessage?.data?.k?.t)
+                            .getTime()
+                            .toString()
+                            .substring(0, 10)
+                    )
+                )
+            ) {
+                const dir =
+                    parseFloat(lastJsonMessage?.data?.k?.o) >
+                    parseFloat(lastJsonMessage?.data?.k?.c)
+                        ? "d"
+                        : "u";
+                const visible =
+                    parseFloat(lastJsonMessage?.data?.k?.v) > averageVol
+                        ? true
+                        : false;
+                averageVol &&
+                    setMarkerList((markers) => {
+                        let oldMarkers = [];
+                        if (markers.length > shiftingPoint) {
+                            oldMarkers = markers.slice(0 - shiftingPoint);
+                        } else {
+                            oldMarkers = markers;
+                        }
+
+                        return [
+                            ...oldMarkers,
+                            {
+                                time: parseInt(
+                                    new Date(lastJsonMessage?.data?.k?.t)
+                                        .getTime()
+                                        .toString()
+                                        .substring(0, 10)
+                                ),
+                                position: dir === "d" ? "aboveBar" : "belowBar",
+                                color: visible
+                                    ? dir === "d"
+                                        ? "red"
+                                        : "green"
+                                    : "rgba(0,0,0,0)",
+                                shape: dir === "d" ? "arrowDown" : "arrowUp",
+                                text: parseFloat(
+                                    lastJsonMessage?.data?.k?.v
+                                ).toString(),
+                            },
+                        ];
+                    });
+            }
+
+            setTotalVol(
+                (total) =>
+                    parseFloat(total) + parseFloat(lastJsonMessage?.data?.k?.v)
+            );
+
+            setAverageVol(parseFloat(totalVol) / liveData.length);
+        }
     }, [lastJsonMessage]);
 
     const handleClickSendMessage = useCallback(() => {
         return sendJsonMessage({
             method: "SUBSCRIBE",
-            params: [`${selectedCoin}@ticker`],
+            // params: [`${selectedCoin}@ticker`],
+            params: [`${selectedCoin}@kline_1s`],
             id: 1,
         });
     }, [sendJsonMessage, selectedCoin]);
@@ -76,19 +138,12 @@ export const ChartComponent = ({
     const handleClickUnSendMessage = useCallback(() => {
         sendJsonMessage({
             method: "UNSUBSCRIBE",
-            params: [`${selectedCoin}@ticker`],
+            // params: [`${selectedCoin}@ticker`],
+            params: [`${selectedCoin}@kline_1s`],
             id: 1,
         });
         setLiveData([]);
     }, [sendJsonMessage, selectedCoin]);
-
-    // const connectionStatus = {
-    //     [ReadyState.CONNECTING]: "Connecting",
-    //     [ReadyState.OPEN]: "Open",
-    //     [ReadyState.CLOSING]: "Closing",
-    //     [ReadyState.CLOSED]: "Closed",
-    //     [ReadyState.UNINSTANTIATED]: "Uninstantiated",
-    // }[readyState];
 
     useEffect(() => {
         const handleResize = () => {
@@ -114,7 +169,6 @@ export const ChartComponent = ({
             width: chartContainerRef.current.clientWidth,
             height: window.innerHeight - 50,
         });
-        chart.timeScale().fitContent();
 
         const btcPriceSeries = chart.addAreaSeries({
             priceLineWidth: 1,
@@ -131,27 +185,14 @@ export const ChartComponent = ({
             btcPriceSeries.setData(liveData);
             setFirstDataSet(true);
         } else {
-            const markers = [
-                {
-                    time: parseInt(
-                        new Date(lastJsonMessage?.data?.E)
-                            .getTime()
-                            .toString()
-                            .substring(0, 10)
-                    ),
-                    position: "aboveBar",
-                    color: "#000000",
-                    shape: "circle",
-                    text: "Aasdadsasd",
-                },
-            ];
             btcPriceSeries.setData(liveData);
-            btcPriceSeries.setMarkers(markers);
+            btcPriceSeries.setMarkers(markerList);
+            chart.timeScale().fitContent();
         }
 
-        if (!chartSeries) {
-            setChartSeries(btcPriceSeries);
-        }
+        // liveData.length > 0 && console.log("[LIVE DATA]", liveData);
+        // markerList.length > 0 && console.log("[MARKERS]", markerList);
+        // liveData.length > 0 && console.log("\n\n\n\n\n");
 
         window.addEventListener("resize", handleResize);
 
