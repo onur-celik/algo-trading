@@ -56,7 +56,7 @@ export const ChartComponent = ({
                 }
 
                 return [
-                    ...volumeData,
+                    ...oldData,
                     {
                         time: parseInt(
                             new Date(lastJsonMessage?.data?.k?.t)
