@@ -1,13 +1,68 @@
-import { useState } from "react";
+import { useState, useMemo, useRef, useCallback, useEffect } from "react";
+import useWebSocket, { ReadyState } from "react-use-websocket";
 
 const Header = ({
     ReadyState,
     selectCoin,
     handleClickSendMessage,
     handleClickUnSendMessage,
-    readyState,
+    _readyState,
+    setMaxAsk,
+    setMaxBid,
 }) => {
+    const [selectedCoin, setSelectedCoin] = useState("btcusdt");
     const [running, setRunning] = useState(false);
+    const [_running, _setRunning] = useState(false);
+
+    const socketUrl = "wss://stream.binance.com:9443/ws";
+    const { sendJsonMessage, lastJsonMessage, readyState } =
+        useWebSocket(socketUrl);
+    const messageHistory = useRef([]);
+    messageHistory.current = useMemo(
+        () => messageHistory.current.concat(lastJsonMessage ?? []),
+        [lastJsonMessage]
+    );
+
+    const setAskBid = (data) => {
+        const asks = data?.asks?.map((ask) => ask[1]);
+        const _asks = asks?.toString().split(",").map(Number);
+        const maxAsk = Math.max.apply(null, _asks);
+        const maxAskOrders = data?.asks?.filter(
+            (ask) => parseFloat(ask[1]) === maxAsk
+        );
+
+        const bids = data?.bids?.map((bid) => bid[1]);
+        const _bids = bids?.toString().split(",").map(Number);
+        const maxBid = Math.max.apply(null, _bids);
+        const maxBidOrders = data?.bids?.filter(
+            (bid) => parseFloat(bid[1]) === maxBid
+        );
+
+        maxAskOrders && setMaxAsk(maxAskOrders);
+        maxBidOrders && setMaxBid(maxBidOrders);
+    };
+
+    useEffect(() => {
+        setAskBid(lastJsonMessage);
+    }, [lastJsonMessage]);
+
+    const _handleClickSendMessage = useCallback(() => {
+        return sendJsonMessage({
+            method: "SUBSCRIBE",
+            params: [`${selectedCoin}@depth10@100ms`],
+            id: 1,
+        });
+    }, [sendJsonMessage, selectedCoin]);
+
+    const _handleClickUnSendMessage = useCallback(() => {
+        sendJsonMessage({
+            method: "UNSUBSCRIBE",
+            params: [`${selectedCoin}@depth10@100ms`],
+            id: 1,
+        });
+        setMaxAsk(null);
+        setMaxBid(null);
+    }, [sendJsonMessage, selectedCoin]);
     return (
         <div
             style={{
@@ -20,7 +75,10 @@ const Header = ({
             }}
         >
             <select
-                onChange={selectCoin}
+                onChange={(e) => {
+                    selectCoin(e);
+                    setSelectedCoin(e.target.value);
+                }}
                 style={{
                     width: 200,
                 }}
@@ -36,9 +94,21 @@ const Header = ({
                         : handleClickSendMessage();
                     setRunning(!running);
                 }}
-                disabled={readyState !== ReadyState.OPEN}
+                disabled={_readyState !== ReadyState.OPEN}
             >
                 {running ? "STOP" : "RUN"}
+            </button>
+
+            <button
+                onClick={() => {
+                    _running
+                        ? _handleClickUnSendMessage()
+                        : _handleClickSendMessage();
+                    _setRunning(!_running);
+                }}
+                disabled={readyState !== ReadyState.OPEN}
+            >
+                {_running ? "STOP O.B" : "RUN O.B"}
             </button>
         </div>
     );

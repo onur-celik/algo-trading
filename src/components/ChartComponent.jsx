@@ -19,11 +19,15 @@ export const ChartComponent = ({
 }) => {
     const [selectedCoin, setSelectedCoin] = useState("btcusdt");
     const [liveData, setLiveData] = useState(data);
+    const [_liveData, _setLiveData] = useState([]);
     const chartContainerRef = useRef();
     const [firstDataSet, setFirstDataSet] = useState(null);
     const [markerList, setMarkerList] = useState([]);
     const [averageVol, setAverageVol] = useState(null);
     const [totalVol, setTotalVol] = useState(0);
+
+    const [maxAsk, setMaxAsk] = useState(null);
+    const [maxBid, setMaxBid] = useState(null);
 
     const selectCoin = (coin) => {
         setSelectedCoin(coin.target.value);
@@ -33,7 +37,6 @@ export const ChartComponent = ({
 
     const { sendJsonMessage, lastJsonMessage, readyState } =
         useWebSocket(socketUrl);
-
     const messageHistory = useRef([]);
 
     messageHistory.current = useMemo(
@@ -42,7 +45,7 @@ export const ChartComponent = ({
     );
 
     useEffect(() => {
-        const shiftingPoint = 180;
+        const shiftingPoint = 60;
         if (lastJsonMessage?.data?.k) {
             setLiveData((liveData) => {
                 let oldData = [];
@@ -129,7 +132,6 @@ export const ChartComponent = ({
     const handleClickSendMessage = useCallback(() => {
         return sendJsonMessage({
             method: "SUBSCRIBE",
-            // params: [`${selectedCoin}@ticker`],
             params: [`${selectedCoin}@kline_1s`],
             id: 1,
         });
@@ -138,7 +140,6 @@ export const ChartComponent = ({
     const handleClickUnSendMessage = useCallback(() => {
         sendJsonMessage({
             method: "UNSUBSCRIBE",
-            // params: [`${selectedCoin}@ticker`],
             params: [`${selectedCoin}@kline_1s`],
             id: 1,
         });
@@ -170,7 +171,7 @@ export const ChartComponent = ({
             height: window.innerHeight - 50,
         });
 
-        const btcPriceSeries = chart.addAreaSeries({
+        const priceSeries = chart.addAreaSeries({
             priceLineWidth: 1,
             baseLineVisible: true,
             lastPriceAnimation: 1,
@@ -182,17 +183,38 @@ export const ChartComponent = ({
             lineWidth: 2,
         });
         if (!firstDataSet) {
-            btcPriceSeries.setData(liveData);
+            priceSeries.setData(liveData);
             setFirstDataSet(true);
         } else {
-            btcPriceSeries.setData(liveData);
-            btcPriceSeries.setMarkers(markerList);
+            priceSeries.setData(liveData);
+            priceSeries.setMarkers(markerList);
+
+            if (maxAsk) {
+                const askLine = {
+                    price: parseFloat(maxAsk[0][0]),
+                    color: "red",
+                    lineWidth: 3,
+                    lineStyle: 2, // LineStyle.Dashed
+                    axisLabelVisible: true,
+                    title: `MAX SELL ORDERS ${maxAsk[0][1]}`,
+                };
+                priceSeries.createPriceLine(askLine);
+            }
+
+            if (maxBid) {
+                const bidLine = {
+                    price: parseFloat(maxBid[0][0]),
+                    color: "green",
+                    lineWidth: 3,
+                    lineStyle: 2, // LineStyle.Dashed
+                    axisLabelVisible: true,
+                    title: `MAX BUY ORDERS ${maxBid[0][1]}`,
+                };
+                priceSeries.createPriceLine(bidLine);
+            }
+
             chart.timeScale().fitContent();
         }
-
-        // liveData.length > 0 && console.log("[LIVE DATA]", liveData);
-        // markerList.length > 0 && console.log("[MARKERS]", markerList);
-        // liveData.length > 0 && console.log("\n\n\n\n\n");
 
         window.addEventListener("resize", handleResize);
 
@@ -201,6 +223,8 @@ export const ChartComponent = ({
             chart.remove();
         };
     }, [
+        maxAsk,
+        maxBid,
         lastJsonMessage,
         liveData,
         data,
@@ -216,9 +240,11 @@ export const ChartComponent = ({
             <Header
                 ReadyState={ReadyState}
                 selectCoin={selectCoin}
-                readyState={readyState}
+                _readyState={readyState}
                 handleClickSendMessage={handleClickSendMessage}
                 handleClickUnSendMessage={handleClickUnSendMessage}
+                setMaxAsk={setMaxAsk}
+                setMaxBid={setMaxBid}
             />
             <div ref={chartContainerRef} />
         </>
