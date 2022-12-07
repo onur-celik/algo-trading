@@ -19,7 +19,7 @@ export const ChartComponent = ({
 }) => {
     const [selectedCoin, setSelectedCoin] = useState("btcusdt");
     const [liveData, setLiveData] = useState(data);
-    const [_liveData, _setLiveData] = useState([]);
+    const [volumeData, setVolumeData] = useState([]);
     const chartContainerRef = useRef();
     const [firstDataSet, setFirstDataSet] = useState(null);
     const [markerList, setMarkerList] = useState([]);
@@ -47,6 +47,32 @@ export const ChartComponent = ({
     useEffect(() => {
         const shiftingPoint = 120;
         if (lastJsonMessage?.data?.k) {
+            setVolumeData((volumeData) => {
+                let oldData = [];
+                if (volumeData.volumeData > shiftingPoint) {
+                    oldData = volumeData.slice(0 - shiftingPoint);
+                } else {
+                    oldData = volumeData;
+                }
+
+                return [
+                    ...volumeData,
+                    {
+                        time: parseInt(
+                            new Date(lastJsonMessage?.data?.k?.t)
+                                .getTime()
+                                .toString()
+                                .substring(0, 10)
+                        ),
+                        value: parseFloat(lastJsonMessage?.data?.k?.v),
+                        color:
+                            parseFloat(lastJsonMessage?.data?.k?.o) >
+                            parseFloat(lastJsonMessage?.data?.k?.c)
+                                ? "rgba(255,82,82, 0.8)"
+                                : "rgba(0, 150, 136, 0.8)",
+                    },
+                ];
+            });
             setLiveData((liveData) => {
                 let oldData = [];
                 if (liveData.length > shiftingPoint) {
@@ -161,8 +187,16 @@ export const ChartComponent = ({
 
         const chart = createChart(chartContainerRef.current, {
             layout: {
-                background: { type: ColorType.Solid, color: backgroundColor },
-                textColor,
+                backgroundColor: "#131722",
+                textColor: "#d1d4dc",
+            },
+            grid: {
+                vertLines: {
+                    color: "rgba(42, 46, 57, 0)",
+                },
+                horzLines: {
+                    color: "rgba(42, 46, 57, 0.6)",
+                },
             },
             watermark: {
                 visible: true,
@@ -177,22 +211,35 @@ export const ChartComponent = ({
             height: window.innerHeight - 50,
         });
 
+        var volumeSeries = chart.addHistogramSeries({
+            color: "#26a69a",
+            priceFormat: {
+                type: "volume",
+            },
+            priceScaleId: "",
+            scaleMargins: {
+                top: 0.8,
+                bottom: 0,
+            },
+        });
+
         const priceSeries = chart.addAreaSeries({
+            topColor: "rgba(38,198,218, 0.56)",
+            bottomColor: "rgba(38,198,218, 0.04)",
+            lineColor: "rgba(38,198,218, 1)",
+            lineWidth: 2,
             priceLineWidth: 1,
             baseLineVisible: true,
             lastPriceAnimation: 1,
-            lineColor,
-            topColor: areaTopColor,
-            bottomColor: areaBottomColor,
             timeVisible: true,
             secondsVisible: true,
-            lineWidth: 2,
         });
         if (!firstDataSet) {
             priceSeries.setData(liveData);
             setFirstDataSet(true);
         } else {
             priceSeries.setData(liveData);
+            volumeSeries.setData(volumeData);
             priceSeries.setMarkers(markerList);
 
             if (maxAsk) {

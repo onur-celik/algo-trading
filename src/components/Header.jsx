@@ -68,10 +68,11 @@ const Header = ({
             style={{
                 height: 50,
                 display: "flex",
-                backgroundColor: "#d65200",
+                background: "linear-gradient(to bottom, #000000, #131722)",
                 justifyContent: "space-around",
                 padding: 10,
                 boxSizing: "border-box",
+                borderBottom: "1px solid rgba(255,255,255,.1)",
             }}
         >
             <select
