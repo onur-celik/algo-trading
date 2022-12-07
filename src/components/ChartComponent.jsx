@@ -45,7 +45,7 @@ export const ChartComponent = ({
     );
 
     useEffect(() => {
-        const shiftingPoint = 60;
+        const shiftingPoint = 120;
         if (lastJsonMessage?.data?.k) {
             setLiveData((liveData) => {
                 let oldData = [];
@@ -96,15 +96,21 @@ export const ChartComponent = ({
                             oldMarkers = markers;
                         }
 
+                        // SHIFT THE MARKERS TO 1 LEFT
+                        const _time =
+                            liveData.length > 2
+                                ? liveData[liveData.length - 1].time
+                                : parseInt(
+                                      new Date(lastJsonMessage?.data?.k?.t)
+                                          .getTime()
+                                          .toString()
+                                          .substring(0, 10)
+                                  );
+
                         return [
                             ...oldMarkers,
                             {
-                                time: parseInt(
-                                    new Date(lastJsonMessage?.data?.k?.t)
-                                        .getTime()
-                                        .toString()
-                                        .substring(0, 10)
-                                ),
+                                time: _time,
                                 position: dir === "d" ? "aboveBar" : "belowBar",
                                 color: visible
                                     ? dir === "d"

@@ -93,13 +93,15 @@ const Header = ({
                         ? handleClickUnSendMessage()
                         : handleClickSendMessage();
                     setRunning(!running);
+                    !running && setTimeout(_handleClickSendMessage, 3000);
+                    running && _handleClickUnSendMessage();
                 }}
                 disabled={_readyState !== ReadyState.OPEN}
             >
                 {running ? "STOP" : "RUN"}
             </button>
 
-            <button
+            {/* <button
                 onClick={() => {
                     _running
                         ? _handleClickUnSendMessage()
@@ -109,7 +111,7 @@ const Header = ({
                 disabled={readyState !== ReadyState.OPEN}
             >
                 {_running ? "STOP O.B" : "RUN O.B"}
-            </button>
+            </button> */}
         </div>
     );
 };
