@@ -49,7 +49,7 @@ export const ChartComponent = ({
         if (lastJsonMessage?.data?.k) {
             setVolumeData((volumeData) => {
                 let oldData = [];
-                if (volumeData.volumeData > shiftingPoint) {
+                if (volumeData.length > shiftingPoint) {
                     oldData = volumeData.slice(0 - shiftingPoint);
                 } else {
                     oldData = volumeData;
