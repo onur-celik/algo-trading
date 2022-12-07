@@ -49,7 +49,7 @@ const Header = ({
     const _handleClickSendMessage = useCallback(() => {
         return sendJsonMessage({
             method: "SUBSCRIBE",
-            params: [`${selectedCoin}@depth10@100ms`],
+            params: [`${selectedCoin}@depth20@100ms`],
             id: 1,
         });
     }, [sendJsonMessage, selectedCoin]);
@@ -57,7 +57,7 @@ const Header = ({
     const _handleClickUnSendMessage = useCallback(() => {
         sendJsonMessage({
             method: "UNSUBSCRIBE",
-            params: [`${selectedCoin}@depth10@100ms`],
+            params: [`${selectedCoin}@depth20@100ms`],
             id: 1,
         });
         setMaxAsk(null);
@@ -93,7 +93,7 @@ const Header = ({
                         ? handleClickUnSendMessage()
                         : handleClickSendMessage();
                     setRunning(!running);
-                    !running && setTimeout(_handleClickSendMessage, 3000);
+                    !running && setTimeout(_handleClickSendMessage, 8000);
                     running && _handleClickUnSendMessage();
                 }}
                 disabled={_readyState !== ReadyState.OPEN}
