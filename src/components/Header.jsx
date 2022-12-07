@@ -75,6 +75,16 @@ const Header = ({
                 borderBottom: "1px solid rgba(255,255,255,.1)",
             }}
         >
+            <a
+                href="https://github.com/onur-celik/bitcoin1second"
+                target={"_blank"}
+            >
+                <img
+                    src="https://onurcelik.dev/avatar.jpg"
+                    style={{ width: 30, height: 30, borderRadius: 6 }}
+                    alt={"Mustafa Onur Çelik"}
+                />
+            </a>
             <select
                 onChange={(e) => {
                     selectCoin(e);
@@ -101,18 +111,6 @@ const Header = ({
             >
                 {running ? "STOP" : "RUN"}
             </button>
-
-            {/* <button
-                onClick={() => {
-                    _running
-                        ? _handleClickUnSendMessage()
-                        : _handleClickSendMessage();
-                    _setRunning(!_running);
-                }}
-                disabled={readyState !== ReadyState.OPEN}
-            >
-                {_running ? "STOP O.B" : "RUN O.B"}
-            </button> */}
         </div>
     );
 };
